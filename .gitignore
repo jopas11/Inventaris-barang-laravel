@@ -39,17 +39,29 @@ public/hot
 public_html/storage
 public_html/hot
 
+# Laravel keys & environment files
 storage/*.key
 .env
-Homestead.yaml
-Homestead.json
-/.vagrant
-.phpunit.result.cache
-
-/public/build
-/storage/pail
 .env.backup
 .env.production
+
+# Laravel Homestead
+Homestead.yaml
+Homestead.json
+
+# Vagrant
+/.vagrant
+
+# PHPUnit
+.phpunit.result.cache
+
+# Build files
+/public/build
+
+# Laravel 10+ pail storage
+/storage/pail
+
+# IDE / tools
 .phpactor.json
 auth.json
 >>>>>>> 61cd790a7d96a9372c2a191397fb1e4b09aecd7e
