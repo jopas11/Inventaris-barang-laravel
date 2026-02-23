@@ -28,9 +28,17 @@ Route::middleware('guest')->group(function () {
     Route::post('/register', [AuthController::class, 'register']);
 
     // Route untuk Google OAuth
-    // Route::get('/auth/google', [AuthController::class, 'redirectToGoogle'])->name('auth.google');
-    // Route::get('/auth/google/callback', [AuthController::class, 'handleGoogleCallback'])->name('auth.google.callback');
+
 });
+Route::get('/verify-otp', [AuthController::class, 'showOtpForm'])->name('verify.otp.form');
+Route::post('/verify-otp', [AuthController::class, 'verifyOtp'])->name('verify.otp');
+
+Route::post('/resend-otp', [AuthController::class, 'resendOtpSession'])->name('resend.otp.session');
+
+
+
+Route::get('/auth/google', [AuthController::class, 'redirectToGoogle'])->name('google.login');
+Route::get('/auth/google/callback', [AuthController::class, 'handleGoogleCallback']);
 
 // Route Logout & Routes yang memerlukan autentikasi
 Route::middleware('auth')->group(function () {

@@ -17,14 +17,16 @@ return new class extends Migration
             $table->string('nama');
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
-            $table->string('password');
+            $table->string('password')->nullable();
             $table->enum('role', ['admin', 'pengelola', 'user'])->default('user');
             $table->enum('status', ['aktif', 'tidak_aktif', 'pending'])->default('pending');
-            $table->string('id_google')->nullable()->unique(); // Menambahkan kolom untuk ID Google
+            $table->string('google_id')->nullable()->unique(); // Menambahkan kolom untuk ID Google
             $table->string('avatar')->nullable(); // Menambahkan kolom untuk avatar dari Google
             $table->rememberToken();
             $table->timestamps();
-      
+            $table->string('otp')->nullable();
+            $table->timestamp('otp_expires_at')->nullable();
+           
         });
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {

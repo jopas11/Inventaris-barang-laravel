@@ -21,8 +21,10 @@ class User extends Authenticatable
         'password',
         'role',
         'status',
-        'id_google',
+        'google_id',
         'avatar',
+        'otp',
+        'otp_expires_at',
     ];
 
     /**
@@ -65,4 +67,16 @@ class User extends Authenticatable
             'id_tenant' // Foreign key di tenant_role_users yang merujuk ke tenants
         );
     }
+
+    public function getAvatarUrlAttribute()
+{
+    // Kalau ada avatar, tampilkan
+    if (!empty($this->avatar)) {
+        return $this->avatar;
+    }
+
+    // Kalau tidak ada, tampilkan default
+    return asset('images/1.jpg');
+}
+
 }

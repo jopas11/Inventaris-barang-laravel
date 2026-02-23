@@ -115,6 +115,21 @@
             </button>
         </form>
 
+        <!-- Divider -->
+        <div class="flex items-center my-4">
+            <div class="flex-grow border-t"></div>
+            <span class="mx-2 text-gray-400 text-sm">atau</span>
+            <div class="flex-grow border-t"></div>
+        </div>
+
+        <!-- Tombol Google -->
+        <a href="{{ route('google.login') }}"
+            class="w-full flex items-center justify-center gap-2 border border-gray-300 py-2 rounded-lg hover:bg-gray-50 transition font-semibold text-gray-700">
+            <i class="fab fa-google text-red-500"></i>
+            Daftar / Masuk dengan Google
+        </a>
+
+
         <!-- Link ke Login -->
         <div class="mt-4 text-sm">
             <a href="/login" class="text-indigo-500 hover:underline">Sudah punya akun? Login</a>

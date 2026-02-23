@@ -8,16 +8,21 @@ use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
+use Laravel\Socialite\Facades\Socialite;
+use Illuminate\Support\Str;
+
+use Carbon\Carbon;
 
 class AuthController extends Controller
 {
-    // Menampilkan halaman login
+    // ================= LOGIN MANUAL =================
+
     public function showLogin()
     {
         return view('auth.login');
     }
 
-    // Proses login dengan redirect sesuai role
     public function login(Request $request)
     {
         $credentials = $request->validate([
@@ -27,63 +32,214 @@ class AuthController extends Controller
 
         $user = User::where('email', $credentials['email'])->first();
 
-        if ($user && $user->status === 'aktif' && Auth::attempt($credentials)) {
+        if (!$user || $user->status !== 'aktif') {
+            return back()->withErrors(['email' => 'Akun belum diverifikasi atau tidak aktif.']);
+        }
+
+        if (Auth::attempt($credentials)) {
             $request->session()->regenerate();
 
-            // Redirect berdasarkan role
             return match ($user->role) {
-                'admin' => redirect()->route('dashboard')->with('login_success', 'Selamat datang, Admin!'),
-                'pengelola' => redirect()->route('pengelola')->with('login_success', 'Selamat datang, Pengelola!'),
-                'user' => redirect()->route('user')->with('login_success', 'Selamat datang!'),
+                'admin' => redirect()->route('dashboard'),
+                'pengelola' => redirect()->route('pengelola'),
+                'user' => redirect()->route('user'),
                 default => redirect()->route('login')->withErrors(['email' => 'Role tidak valid.']),
             };
         }
 
-        return back()->withErrors(['email' => 'Email atau password salah, atau akun belum aktif.']);
+        return back()->withErrors(['email' => 'Email atau password salah.']);
     }
 
-    // Menampilkan halaman register
+    // ================= REGISTER MANUAL + OTP =================
+
     public function showRegister()
     {
         return view('auth.register');
     }
 
-    // Proses register
-    public function register(Request $request)
-    {
-        $data = $request->validate([
-            'nama' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email',
-            'password' => [
-                'required',
-                'confirmed',
-                'min:8',
-                'regex:/^[A-Z][A-Za-z0-9]{7,}$/', // Awali dengan huruf kapital, kombinasi huruf dan angka, min 8 karakter
-                'regex:/[0-9]/', // Harus mengandung angka
-            ],
-            'role' => ['required', Rule::in(['pengelola', 'user'])],
-        ], [
-            'password.regex' => 'Password harus diawali huruf kapital, minimal 8 karakter dan mengandung angka.',
-        ]);
+ public function register(Request $request)
+{
+    $data = $request->validate([
+        'nama' => 'required|string|max:255',
+        'email' => 'required|email|unique:users,email',
+        'password' => [
+            'required',
+            'confirmed',
+            'min:8',
+            'regex:/^[A-Z][A-Za-z0-9]{7,}$/',
+            'regex:/[0-9]/',
+        ],
+        'role' => ['required', Rule::in(['pengelola', 'user'])],
+    ]);
 
-        $user = User::create([
+    $otp = rand(100000, 999999);
+
+    // 🔥 Simpan ke session, bukan database
+    session([
+        'register_data' => [
             'nama' => $data['nama'],
             'email' => $data['email'],
             'password' => Hash::make($data['password']),
-            'role' => $request->role,
-            'status' => 'pending',
-        ]);
+            'role' => $data['role'],
+            'otp' => $otp,
+            'otp_expires_at' => now()->addMinutes(5),
+        ]
+    ]);
 
-        Role::create([
-            'id_user' => $user->id,
-            'role' => $request->role,
-        ]);
+    Mail::raw("Kode OTP Anda adalah: $otp (berlaku 5 menit)", function ($message) use ($data) {
+        $message->to($data['email'])
+            ->subject('Verifikasi Akun - OTP');
+    });
 
-        return redirect()->route('register')->with('success', 'Akun Anda berhasil dibuat! Tunggu persetujuan admin sebelum login.');
+    return redirect()->route('verify.otp.form');
+}
+
+
+    // ================= VERIFIKASI OTP =================
+
+    public function showOtpForm()
+{
+    if (!session()->has('register_data')) {
+        return redirect()->route('register');
     }
 
+    return view('auth.verify-otp');
+}
 
-    // Proses logout
+
+   public function verifyOtp(Request $request)
+{
+    $request->validate([
+        'otp' => 'required|digits:6'
+    ]);
+
+    if (!session()->has('register_data')) {
+        return redirect()->route('register');
+    }
+
+    $data = session('register_data');
+
+    if ($request->otp != $data['otp']) {
+        return back()->withErrors(['otp' => 'OTP salah']);
+    }
+
+    if (now()->gt($data['otp_expires_at'])) {
+        return back()->withErrors(['otp' => 'OTP sudah kadaluarsa']);
+    }
+
+    // 🔥 Baru buat user setelah OTP benar
+    $user = User::create([
+        'nama' => $data['nama'],
+        'email' => $data['email'],
+        'password' => $data['password'],
+        'role' => $data['role'],
+        'status' => 'aktif',
+        'email_verified_at' => now(),
+    ]);
+
+    Role::create([
+        'id_user' => $user->id,
+        'role' => $data['role'],
+    ]);
+
+    // Hapus session
+    session()->forget('register_data');
+
+    Auth::login($user);
+
+    return match ($user->role) {
+        'admin' => redirect()->route('dashboard'),
+        'pengelola' => redirect()->route('pengelola'),
+        'user' => redirect()->route('user'),
+        default => redirect()->route('login'),
+    };
+}
+
+
+
+   public function resendOtpSession()
+{
+    if (!session()->has('register_data')) {
+        return redirect()->route('register');
+    }
+
+    $data = session('register_data');
+
+    $otp = rand(100000, 999999);
+
+    $data['otp'] = $otp;
+    $data['otp_expires_at'] = now()->addMinutes(5);
+
+    session(['register_data' => $data]);
+
+    Mail::raw("Kode OTP baru Anda adalah: $otp (berlaku 5 menit)", function ($message) use ($data) {
+        $message->to($data['email'])
+            ->subject('Resend OTP');
+    });
+
+    return back()->with('success', 'OTP baru telah dikirim.');
+}
+
+
+
+    // ================= LOGIN GOOGLE =================
+
+    public function redirectToGoogle()
+    {
+        return Socialite::driver('google')->redirect();
+    }
+
+    public function handleGoogleCallback()
+    {
+        try {
+            $googleUser = Socialite::driver('google')->stateless()->user();
+
+            $user = User::where('email', $googleUser->getEmail())->first();
+
+            if (!$user) {
+                $user = User::create([
+                    'nama' => $googleUser->getName(),
+                    'email' => $googleUser->getEmail(),
+                    'email_verified_at' => now(),
+                    'role' => 'user',
+                    'status' => 'aktif',
+                    'google_id' => $googleUser->getId(),
+                    'avatar' => $googleUser->getAvatar(),
+                ]);
+
+                Role::create([
+                    'id_user' => $user->id,
+                    'role' => 'user',
+                ]);
+            } else {
+                $user->update([
+                    'google_id' => $googleUser->getId(),
+                    'avatar' => $googleUser->getAvatar(),
+                    'email_verified_at' => now(),
+                ]);
+            }
+
+            if ($user->status !== 'aktif') {
+                return redirect()->route('login')
+                    ->withErrors(['email' => 'Akun belum aktif.']);
+            }
+
+            Auth::login($user);
+
+            return match ($user->role) {
+                'admin' => redirect()->route('dashboard'),
+                'pengelola' => redirect()->route('pengelola'),
+                'user' => redirect()->route('user'),
+                default => redirect()->route('login')->withErrors(['email' => 'Role tidak valid.']),
+            };
+        } catch (\Exception $e) {
+            return redirect()->route('login')
+                ->withErrors(['email' => 'Login Google gagal.']);
+        }
+    }
+
+    // ================= LOGOUT =================
+
     public function logout(Request $request)
     {
         Auth::logout();

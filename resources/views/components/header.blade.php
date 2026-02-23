@@ -8,7 +8,10 @@
     <div class="relative" x-data="{ open: false, showModal: false }">
         <button @click="open = !open" class="flex items-center space-x-4 focus:outline-none">
             <span class="text-sm">{{ Auth::user()->nama }} ({{ Auth::user()->role }})</span>
-            <img src="{{ asset('images/1.jpg') }}" class="rounded-full w-8 h-8" alt="User">
+<img src="{{ Auth::user()->avatar_url }}"
+     onerror="this.src='{{ asset('images/1.jpg') }}'"
+     class="rounded-full w-8 h-8 object-cover"
+     alt="User">
         </button>
         <div x-show="open" x-cloak @click.away="open = false"
             class="absolute right-0 mt-2 w-48 bg-white border rounded shadow-md z-50">
