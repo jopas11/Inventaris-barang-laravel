@@ -61,7 +61,7 @@
                     @method('PUT')
 
                     <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700">No Barang Keluar</label>
+                        <label class="block text-sm font-medium text-gray-700">No Barang Keluarr</label>
                         <input type="text" name="no_barangkeluar"
                             class="w-full p-2 border rounded bg-gray-100"
                             value="{{ $barangKeluar->no_barangkeluar }}" readonly>
