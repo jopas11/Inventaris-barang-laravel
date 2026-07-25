@@ -22,7 +22,7 @@
                 <thead class="bg-gray-100">
                     <tr>
                         <th class="py-3 px-6 text-left">No.</th>
-                        <th class="py-3 px-6 text-left">No Barang Keluar</th>
+                        <th class="py-3 px-6 text-left">No 1 Barang Keluar</th>
                         <th class="py-3 px-6 text-left">Tanggal</th>
                         <th class="py-3 px-6 text-left">Nama Barang</th>
                         <th class="py-3 px-6 text-left">Satuan</th>
