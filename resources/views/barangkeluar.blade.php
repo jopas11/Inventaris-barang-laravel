@@ -24,7 +24,7 @@
                         <th class="py-3 px-6 text-left">No.</th>
                         <th class="py-3 px-6 text-left">No 1 Barang Keluar</th>
                         <th class="py-3 px-6 text-left">Tanggal</th>
-                        <th class="py-3 px-6 text-left">Nama Barang</th>
+                        <th class="py-3 px-6 text-left">Nama 1 Barang</th>
                         <th class="py-3 px-6 text-left">Satuan</th>
                         <th class="py-3 px-6 text-left">Jumlah Keluar</th>
                         <th class="py-3 px-6 text-left">Aksi</th>
