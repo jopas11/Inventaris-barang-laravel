@@ -21,7 +21,7 @@
                 <thead class="bg-gray-100">
                     <tr>
                         <th>No.</th>
-                        <th>ID Barang</th>
+                        <th>ID 1 Barang</th>
                         <th>Nama Barang</th>
                         <th>Stok</th>
                         <th>Satuan</th>
